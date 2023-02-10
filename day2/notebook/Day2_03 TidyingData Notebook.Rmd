@@ -1,0 +1,299 @@
+---
+title: "Day2_03 TidyingData Notebook"
+output: html_notebook
+---
+
+# 1. มโนทัศน์พื้นฐาน
+
+## กิจกรรม : Messydata
+
+1.  ดาวน์โหลดไฟล์ข้อมูล messydata.xlsx
+2.  นำไฟล์ข้อมูล messydata.xlsx เข้าโปรแกรม R
+
+```{r eval=F}
+dat <- read_excel("messydata.xlsx", na="-")
+```
+
+3.  ลองสำรวจข้อมูลข้างต้นแล้วตอบคำถาม
+
+วัตถุประสงค์ของการวิจัยคือ เพื่อเปรียบเทียบทักษะการแก้ปัญหาของนักเรียน ภายหลังจากได้รับการจัดการเรียนรู้ด้วย วิธีการสอนแบบบรรยาย (Lecture) กับ วิธีการสอนแบบใช้ปัญหาเป็นฐาน (PBL)
+
+**ท่านคิดว่า ข้อมูล messydata.xlsx มีความพร้อมที่จะนำไปวิเคราะห์เพื่อตอบวัตถุประสงค์ดังกล่าวหรือไม่?**
+
+## กิจกรรม : การเปลี่ยนชื่อคอลัมน์
+
+นอกจากการเปลี่ยนชื่อคอลัมน์ผ่านอาร์กิวเมนท์ `col_names` แล้ว ผู้วิเคราะห์ยังสามารถเลือกเปลี่ยนชื่อคอลัมน์เป็นรายตัวได้ โดยใช้ฟังก์ชัน `names()` ดังนี้
+
+```{r}
+names(dat)
+names(dat)[1]<-"id"
+names(dat)
+```
+
+```{r}
+head(dat)
+```
+
+## ภาพรวมของการเตรียมข้อมูล
+
+-   Tidying Data
+
+-   Manipulating Data
+
+-   Missing Values Analysis and Imputation
+
+-   Outlier Detection and Handling
+
+-   Data Reduction
+
+-   Feature Selection
+
+-   ...
+
+## การเตรียมข้อมูลภายใต้กระบวนการวิเคราะห์ข้อมูล
+
+ดูใน ppt
+
+## ตัวอย่าง : โมเดลทำนายการได้ขึ้นเงินเดือนของพนักงาน
+
+ดูใน ppt
+
+# 2. เครื่องมือสำรวจชุดข้อมูลเบื้องต้น
+
+## ฟังก์ชันพื้นฐานใน R สำหรับสำรวจข้อมูล
+
+-   `str()` - ใช้สำรวจโครงสร้างโดยรวมของชุดข้อมูล
+
+-   `head()` และ `tail()` - ใช้เรียกดูตารางข้อมูลส่วนหัว และส่วนท้าย
+
+-   `names()` - ใช้เรียกดูชื่อคอลัมน์ในชุดข้อมูล และยังสามารถใช้เปลี่ยนชื่อคอลัมน์ได้ด้วย
+
+-   `summary()` - เรียกดูค่าสถิติเบื้องต้นของตัวแปรแต่ละตัวภายในชุดข้อมูล
+
+## กิจกรรม : การสำรวจชุดข้อมูล
+
+จากชุดข้อมูล messydata.xlsx ขอให้ผู้เรียน
+
+-   ทดลองใช้ฟังก์ชันพื้นฐานข้างต้น สำรวจชุดข้อมูลผลลัพธ์ที่ได้เป็นอย่างไร
+
+-   ชุดข้อมูลที่นำเข้าจาก messydata.xlsx มีคุณสมบัติ tidy data หรือไม่ อย่างไร
+
+-   ผู้เรียนคิดว่า tidy data ของชุดข้อมูล messydata.xlsx ควรมีหน้าตาเป็นอย่างไร
+
+โปรด upload รูป tidy data ของท่านที่นี่ ---\> [upload เลย](https://padlet.com/choat_cu/my-tidy-data-lhxzt12qbhra11yf)
+
+
+# 3. Tidying Data
+
+## Tidying Data
+
+-   Reshaping data
+
+-   Splitting and Combining column
+
+## Tidyr package
+
+```{r eval=F}
+#installl.packages("tidyr")
+library(tidyr)
+```
+
+# `-` Reshaping data
+
+## Long and Wide Format data
+
+-   ชุดข้อมูล messydata.xlsx เป็นแบบ long หรือ wide format ?
+
+```{r}
+head(dat)
+```
+
+## Reshaping data: wide ---\> long format
+
+
+```{r eval=F}
+gather(data, ..., key, value)
+```
+
+-   `data` ชุดข้อมูลประเภท wide format
+
+-   `…` คอลัมน์ทั้งหมดใน `dat` ต้องการยุบมาไว้ภายใต้คอลัมน์ใหม่
+
+-   `key` ชื่อคอลัมน์ใหม่สำหรับเก็บ header หรือชื่อคอลัมน์ที่อยู่ใน `…`
+
+-   `value` ชื่อคอลัมน์ใหม่สำหรับเก็บข้อมูลที่อยู่ภายใต้ `…`
+
+## Reshaping data: wide ---\> long format using `gather()`
+
+```{r}
+# messy data
+head(dat)
+```
+
+## Reshaping data: wide ---\> long format using `gather()`
+
+```{r}
+long_dat <- gather(dat, 
+                   Lecture.pre, 
+                   PBL.pre, 
+                   Lecture.post, 
+                   PBL.post,
+       key = "method_time",
+       value = "score")
+```
+
+## Reshaping data: wide ---\> long format using `gather()`
+
+```{r}
+head(long_dat)
+```
+
+-   ข้อมูลข้างต้นเรียกว่า Tidy Data ได้แล้วหรือไม่ ? เพราะเหตุใด ?
+
+## Reshaping data: long ---\> wide format using `spread()`
+
+
+```{r eval=F}
+spread(data, key, value)
+```
+
+-   `data` คือ dataframe ที่ต้องการแปลงจาก long เป็น wide format
+
+-   `key` คือ คอลัมน์ใน `data` ที่ต้องการ expand ไปอยู่บน header ของตาราง
+
+-   `value` คือ คอลัมน์ใน `data` ที่ต้องการย้ายไปอยู่ภายใต้ header ใหม่
+
+## Reshaping data: long ---\> wide format using `spread()`
+
+```{r}
+wide_dat <- spread(long_dat, 
+       key ="method_time",
+       value = "score")
+```
+
+## Reshaping data: long ---\> wide format using `spread()`
+
+```{r}
+head(wide_dat)
+```
+
+# `- Separate()`/`Unite()`
+
+## Separate Column using `separate()`
+
+ชุดข้อมูล `long_dat` ยังไม่ใช่ tidy data ปัญหาหนึ่งที่พบคือคอลัมน์ `method_time` มีข้อมูลทั้งของวิธีการสอน และเวลาที่วัดค่าสังเกต รวมกันอยู่
+
+```{r eval=F}
+separate(data, col, into, sep)
+```
+
+-   `data` คือชุดข้อมูลที่ต้องการแยกคอลัมน์
+
+-   `col` คือคอลัมน์ที่ต้องการแยกข้อมูลออกจากกัน
+
+-   `into` ชื่อคอลัมน์ใหม่สำหรับเก็บข้อมูลที่แยกออกจากกัน
+
+-   `sep` คือตัวคั่นหรือเงื่อนไขที่ใช้สำหรับแยกข้อมูลใน `col`
+
+## Separate Column using `separate()`
+
+ทดลองแยกคอลัมน์ `method.time` ในชุดข้อมูล `long_dat`
+
+```{r}
+separated_dat <- separate(long_dat,
+                          col = "method_time",
+                          into = c("method","time"),
+                          sep="[.]")
+```
+
+## Separate Column using `separate()`
+
+```{r}
+head(separated_dat)
+```
+
+-   ชุดข้อมูล `separated_dat` เป็น tidy data แล้วหรือไม่ ? เพราะเหตุใด?
+
+## Combing Column using `unite()`
+
+นอกจากแยกคอลัมน์แล้วยังสามารถยุบรวมคอลัมน์เข้าด้วยกันได้ด้วย
+
+```{r eval=F}
+unite(data, ..., col, sep)
+```
+
+-   `data` คือชุดข้อมูลที่ต้องการยุบรวมคอลัมน์เข้าด้วยกัน
+
+-   `...` คือคอลัมน์ใน `dat` ที่ต้องการยุบรวมคอลัมน์เข้าด้วยกัน
+
+-   `col` คือชื่อคอลัมน์ใหม่ภายหลังยุบรวมคอลัมน์
+
+-   `sep` คือตัวคั่นระหว่างข้อมูลใหม่ที่ยุบรวมกัน
+
+## Combing Column using `unite()`
+
+```{r}
+combine_dat <- unite(separated_dat, 
+      method, time,
+      col = "method.time",
+      sep = "-")
+```
+
+## Combing Column using `unite()`
+
+```{r}
+head(combine_dat)
+```
+
+# 4. My First Tidy Data
+
+## กิจกรรม : My First Tidy data
+
+ขอให้ผู้เรียนดำเนินการจัดระเบียบชุดข้อมูล `separated_dat` ให้เป็น Tidy data
+
+```{r echo=F}
+dat%>%gather(Lecture.pre:PBL.post,
+               key = "method.time",
+               value = "score") %>%
+  separate(col="method.time", into=c("method","time"))%>%
+  spread(key="time",value="score")%>%
+  drop_na()
+```
+
+# 5. การเขียนไฟล์ข้อมูล
+
+### data.frame to CSV
+
+ผู้วิเคราะห์สามารถเขียนไฟล์ข้อมูลที่จัดระเบียบแล้วไปเก็บไปใน file อื่น เช่น .csv หรือ .xlsx ได้ โดยใช้ฟังก์ชันต่อไปนี้
+
+```{r eval=F}
+# writing data.frame to csv file
+write.csv(x, file="file_name.csv",
+          row.names = TRUE, col.names = TRUE)
+```
+
+โดยที่ `x` คือชุดข้อมูลแบบ data.frame ใน R ที่ต้องการเขียนออก
+
+### data.frame to xlsx
+
+```{r eval=F}
+# writing data.frame to xlsx file
+install.packages("writexl")
+library(writexl)
+write_xlsx(x, path = "file_name.xlsx",
+           col_names = TRUE)
+```
+
+## กิจกรรม : การเขียนไฟล์ข้อมูล
+
+ขอให้ผู้เรียนเขียน data.frame ที่ทำการจัดระเบียบแล้วจากกิจกรรม My First Tidy data ออกไปเก็บในไฟล์ .csv และ .xlsx
+
+# 5. Q & A
+
+
+
+
+
+
+
+
