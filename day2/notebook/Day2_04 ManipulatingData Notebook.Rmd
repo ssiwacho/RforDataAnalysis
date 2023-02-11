@@ -1,0 +1,382 @@
+---
+title: "Day2_04 ManipulatingData Notebook"
+output: html_notebook
+---
+
+# 1. dplyr package
+
+## dplyr package
+
+![](images/image-314206571.png){width="20%"}
+
+```{r eval=F}
+install.packages("dplyr")
+library(dplyr)
+```
+
+## piping operator (`%>%`)
+
+ตัวดำเนินการ piping มีประโยชน์อย่างมากในการดำเนินงานที่มีหลายขั้นตอน ใช้สำหรับส่งผ่านข้อมูลทางซ้ายของตัวดำเนินการ ไปยังฟังก์ชันที่อยู่ทางด้านขวาของตัวดำเนินการเป็นลูกโซ่ต่อไปเรื่อย ๆ
+
+```{r echo=F}
+library(readxl)
+dat <- read_excel("messydata.xlsx", na="-")
+head(dat)
+```
+
+## piping operator (`%>%`)
+
+```{r}
+mytidy <- dat %>% 
+    gather( Lecture.pre, PBL.pre,               
+            Lecture.post, PBL.post,
+          key = "method_time",
+          value = "score") %>%
+    separate(col = "method_time",
+             into = c("method","time"),
+             sep="[.]") %>%
+    spread(key = "time",
+       value = "score") %>%
+  rename(student_name = ...1)
+```
+
+## piping operator (`%>%`)
+
+```{r}
+head(mytidy)
+```
+
+## Manipulatindg Data using dplyr
+
+-   Selecting variables
+
+-   Filtering cases
+
+-   Transforming variables
+
+-   Summarise variables
+
+## ชุดข้อมูลที่ใช้เป็นตัวอย่าง
+
+บทเรียนนี้จะใช้ชุดข้อมูล 2 ชุดได้แก่
+
+-   ชุดข้อมูลจากกิจกรรม My First Tidy Data
+
+-   ชุดข้อมูลจากไฟล์ข้อมูล mytidy2.csv
+
+```{r echo=T}
+mytidy2 <- read.csv("mytidy2.csv", header=T)
+head(mytidy2)
+```
+
+## mytidy2
+
+```{r}
+str(mytidy2)
+```
+
+# 2. Selecting variables
+
+## Selecting variables
+
+การคัดเลือกตัวแปรจากชุดข้อมูลใน R สามารถทำได้หลายวิธีการ บทเรียนนี้จะแนะนำวิธีการที่ใช้ฟังก์ชัน `select()` ของ package dplyr
+
+```{r}
+subset_dat <- mytidy2 %>% 
+              select(stress.1, stress.2, stress.3, 
+                     stress.4, stress.5, gpax.y2)
+head(subset_dat)
+```
+
+## Selecting variables : selection helpers
+
+-   `everything()`: Matches all variables.
+
+-   `last_col()`: Select last variable, possibly with an offset.
+
+-   `starts_with()`: Starts with a prefix.
+
+-   `ends_with()`: Ends with a suffix.
+
+-   `contains()`: Contains a literal string.
+
+-   `matches()`: Matches a regular expression.
+
+-   `num_range()`: Matches a numerical range like x01, x02, x03.
+
+```{r}
+mytidy2 %>% 
+      select(starts_with("stress"),
+             contains("engage"),
+             gpax.y2)
+```
+
+```{r}
+mytidy2 %>% 
+      select(stress.1:stress.5)
+```
+
+# 3. Transforming variable
+
+## Transforming variable using dplyr
+
+จากชุดข้อมูล mytidy2.csv ลองคำนวณคะแนนความเครียดในการเรียนด้วยการเฉลี่ยคะแนนตัวบ่งชี้ความเครียด (`stress.1, stress.2, …, stress.5`)
+
+```{r eval=F}
+mytidy2 <- mytidy2 %>% 
+  mutate(stress = (stress.1 + stress.2 + 
+          stress.3 + stress.4 + stress.5)/5) 
+# summary stat of stress
+mytidy2 %>% select(stress) %>% summary()
+# histogram of stress
+hist(mytidy2$stress)
+```
+
+```{r echo=F}
+mytidy2 <- mytidy2 %>% 
+  mutate(stress = (stress.1 + stress.2 + 
+          stress.3 + stress.4 + stress.5)/5) 
+mytidy2 %>% 
+  select(stress) %>%
+  summary()
+
+hist(mytidy2$stress)
+```
+
+สมมุติว่าผู้วิเคราะห์ต้องการสร้างตัวแปรใหม่ชื่อ `result` จากตัวแปรเดิมคือ `gpax.y2` โดยมีเกณฑ์ดังนี้
+
+-   ถ้า `gpax.y2` $\geq 1.5$ หมายถึงสอบผ่าน (pass)
+
+-   ถ้า `gpax.y2` $< 1.5$ หมายถึงสอบตก (fail)
+
+```{r eval=F}
+mytidy2 %>% 
+  mutate(result = ifelse(gpax.y2 >= 1.5 ,1,0),
+         result = factor(result, 
+                         labels=c("fail","pass")))
+```
+
+```{r echo=F}
+mytidy2 %>% 
+  mutate(result = ifelse(gpax.y2 >= 1.5 ,1,0),
+         result = factor(result, 
+                         labels=c("fail","pass")))%>%
+  select(result)%>%
+  summary()
+```
+
+## กิจกรรม : Calculate Student Engagement score
+
+คำนวณคะแนน engagement ของนักเรียนรายบุคคลจากคะแนนเฉลี่ยตัวบ่งชี้ `stu.engage.1` - `stu.engage.4`
+
+```{r echo=F, fig.height = 4.5}
+mytidy2$engage<- mytidy2 %>%
+  mutate(engage = select(.,contains("engage")))%>%
+  select(engage)%>%
+  rowMeans()
+mytidy2$engage %>% summary()
+hist(mytidy2$engage, 
+     col="steelblue", 
+     border="white",
+     main = "Histogram of Engagement",
+     xlab = "Engagement Score")
+ 
+```
+
+## กิจกรรม : Transforming variable
+
+ชุดข้อมูล mytidy2 มีตัวแปรจัดประเภท 3 ตัวได้แก่
+
+-   `infect` -- เคยติด Covid-10 หรือไม่ (1 = yes และ 2 = no)
+
+-   `stu.itcap` -- ความสามารถในการใช้ technology (1 = low, 2 = mid และ 3 = high)
+
+-   `internet` - สัญญาณ internet (1 =no problem และ 2 = have problem)
+
+**ขอให้ผู้เรียนเปลี่ยนสถานะของตัวแปรจัดประเภททั้ง 3 ในชุดข้อมูลข้างต้นให้เป็น Factor**
+
+# 4. Filtering cases
+
+## Filtering cases
+
+การคัดกรองหน่วยข้อมูล เป็นการเลือกหน่วยข้อมูลตามเงื่อนไขที่กำหนดจากชุดข้อมูล การคัดกรองหน่วยข้อมูลใน R สามารถทำได้หลายวิธีการ วิธีการพื้นฐานคือใช้การอ้างอิงสมาชิกแบบเมทริกซ์ เช่น `mytidy2[infect==2,]`
+
+```{r}
+mytidy2 %>% 
+  filter(infect == 2)
+```
+
+**ตัวดำเนินการตรรกะ (logical operator)**
+
+-   `>=` หมายถึง
+
+-   `<=` หมายถึง
+
+-   `<`
+
+-   `>`
+
+-   `==`
+
+-   `!=`
+
+เราสามารถใช้ตัวดำเนินการเชิงตรรกะ ได้แก่ และ (,) หรือ (\|) เพื่อกำหนดเงื่อนไขที่ซับซ้อนขึ้นได้
+
+```{r}
+mytidy2 %>%
+  filter(infect == 2 , gpax.y2 >3)
+```
+
+
+```{r}
+mytidy2 %>%
+  filter(infect == 2 , gpax.y2 >3)
+```
+
+## กิจกรรม : filtering cases 
+
+-   นักเรียนที่มีเกรดเฉลี่ยสะสมน้อยกว่า 1.5 หรือมากกว่า 3.0 มีจำนวนกี่คน และมีใครบ้าง
+
+-   นักเรียนที่เก่งการใช้เทคโนโลยี (กลุ่มคล่องแคล่วมาก) และมีความเครียดในการเรียน (stress) น้อยกว่า 3 คะแนน มีกี่คน และในจำนวนนี้เกรดเฉลี่ยสะสมเป็นอย่างไร
+
+## `arrange()` function
+
+ฟังก์ชัน `arrange()` ใช้สำหรับเรียงลำดับข้อมูลตามตัวแปรที่กำหนด โดยสามารถเรียงจากน้อยไปมาก หรือมากไปน้อยก็ได้ ตามกำหนด
+
+ลองพิจารณาผลลัพธ์ต่อไปนี้
+
+```{r}
+mytidy2 %>% 
+select(stress, gpax.y2) %>% 
+arrange(gpax.y2)
+```
+
+```{r}
+mytidy2 %>% 
+select(stress, gpax.y2) %>% 
+arrange(desc(gpax.y2))
+```
+
+## กิจกรรม 
+
+นักเรียนที่มีเกรดเฉลี่ยสะสมน้อยกว่า 1.5 หรือมากกว่าเท่ากับ 3.0 และเคยติดเชื้อ Covid-19 คนที่มีคะแนนความเครียด (stress) สูงและต่ำที่สุดคือใคร
+
+
+# 5. Summarise
+
+## Summarise stat using dplyr
+
+
+## Summarise functions
+
+-   Center: `mean()`, `median()`
+
+-   Spread: `sd()`, `IQR()`, `mad()`
+
+-   Range: `min()`, `max()`, `quantile()`
+
+-   Count: `n()`, `n_distinct()`
+
+
+จงหาค่าสถิติพื้นฐานของความเครียด และ gpax ในกลุ่มนักเรียนที่ไม่เคยติดเชื้อ Covid-19
+
+```{r eval=F}
+mytidy2 %>% 
+  summarise(mean.stress = mean(stress),
+            sd.stress = sd(stress),
+            min.stress = min(stress),
+            max.stress = max(stress),
+            mean.gpax = mean(gpax.y2),
+            sd.gpax = sd(gpax.y2),
+            q1.gpax = quantile(gpax.y2, 0.25),
+            q3.gpax = quantile(gpax.y2, 0.75))
+```
+
+
+```{r echo=F}
+mytidy2 %>% 
+  summarise(mean.stress = mean(stress),
+            sd.stress = sd(stress),
+            min.stress = min(stress),
+            max.stress = max(stress),
+            mean.gpax = mean(gpax.y2),
+            sd.gpax = sd(gpax.y2),
+            q1.gpax = quantile(gpax.y2, 0.25),
+            q3.gpax = quantile(gpax.y2, 0.75)) %>%t()
+```
+
+ผู้วิเคราะห์ต้องการหาค่าเฉลี่ย และส่วนเบี่ยงเบนมาตรฐานของจำนวนอุปกรณ์ it ที่นักเรียนมี (`it.equip`) เมื่อดำเนินการคำนวณพบว่าได้ผลลัพธ์ดังนี้
+
+```{r}
+mytidy2 %>%
+  summarise(mean.it = mean(it.equip),
+            sd.it = sd(it.equip))
+```
+
+**ท่านคิดว่าปัญหาข้างต้นเกิดจากอะไร?**
+
+
+
+## `group_by()` function
+
+**สมมติว่า ต้องการหาค่าเฉลี่ยและส่วนเบี่ยงเบนมาตรฐานของคะแนนความเครียดระหว่าง กลุ่มที่ไม่มีปัญหา และ มีปัญหาเกี่ยวกับสัญญาณ internet**
+
+```{r eval=F}
+mytidy2 %>% 
+  group_by(internet) %>%
+  summarise(mean = mean(stress),
+            sd = sd(stress))
+```
+
+```{r echo=F}
+mytidy2 %>% 
+  mutate(internet = factor(internet, labels=c("no problem","have problem")))%>%
+  group_by(internet) %>%
+  summarise(mean = mean(stress),
+            sd = sd(stress))
+```
+
+# 6. Merging datasets
+
+
+## ตัวอย่าง
+
+```{r}
+X<-data.frame(id=c(1,2,3),
+              x1=c(10,20,30),
+              x2=c(5,7,9))
+Y<-data.frame(id=c(1,2,5),
+              y1=c(20,40,60),
+              y2=c("F","M","F"))
+X
+Y
+```
+
+```{r}
+full_join(X,Y, by="id")
+```
+
+
+```{r}
+inner_join(X,Y, by="id")
+```
+
+## Merging mytidy and mytidy2
+
+```{r}
+head(mytidy,3)
+head(mytidy2[,1:4],3)
+```
+
+
+```{r}
+full_mytidy <- full_join(mytidy, 
+                         mytidy2, 
+                         by=c("student_name" = "name"))
+```
+
+```{r}
+glimpse(full_mytidy)
+```
+
+#7. Q & A
